@@ -31,24 +31,21 @@
                         <th>Country Name</th>
                         <th>CCA2</th>
                         <th>CCA3</th>
-                        <!-- <th>Native Country Name</th> -->
-                        <th> Alternative Country Name</th>
-                        <th>Country Calling Codes</th>
+                        <th> Alternative Name</th>
+                        <th>Calling Codes</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(country,index) in countries" :key="index">
-
+                    <tr v-for="(country, index) in countries" :key="index">
                         <td><img :src="country.flags[1]" width="140" height="90" /></td>
-                        <td id="show-modal" data-bs-toggle="modal" data-bs-target="#exampleModal" @click="modalCountry(index)">{{ country.name.official }}  </td>
+                        <td id="show-modal" data-bs-toggle="modal" data-bs-target="#exampleModal"
+                            @click="modalCountry(index)"><a href="#" class="text-decoration-none">{{ country.name.official }}</a></td>
                         <td>{{ country.cca2 }}</td>
                         <td>{{ country.cca3 }}</td>
-                        <!-- <td>{{ country.name.nativeName }}</td> -->
                         <td>{{ country.altSpellings.join(', ') }}</td>
                         <td>{{ country.idd.root }}</td>
                     </tr>
                 </tbody>
-
             </table>
 
             <div class="row">
@@ -66,17 +63,15 @@
         </div>
     </div>
 
-    
     <CountryModal :country="country_data" />
-
 </template>
 <script>
 import axios from 'axios';
 import CountryModal from './CountryModal.vue';
 
 export default {
-    components: { 
-        CountryModal 
+    components: {
+        CountryModal
     },
     data() {
         return {
@@ -97,15 +92,15 @@ export default {
         fetchCountries() {
             axios.get("https://restcountries.com/v3/all")
                 .then(response => {
-                this.oldData = response.data;
-                this.countries = response.data;
-                // console.log(this.countries) //250
-            }).then(() => {
-                this.displayedcountries();
-            })
+                    this.oldData = response.data;
+                    this.countries = response.data;
+                    // console.log(this.countries) //250
+                }).then(() => {
+                    this.displayedcountries();
+                })
                 .catch(error => {
-                console.error(error);
-            });
+                    console.error(error);
+                });
         },
         setPages() {
             let numberOfPages = Math.ceil(this.countries.length / this.perPage);
@@ -138,16 +133,12 @@ export default {
         displayedcountries() {
             this.countries = this.paginate(this.oldData.filter(country => country.name.official.toLowerCase().includes(this.search.toLowerCase())));
         },
-        modalCountry(index){
+        modalCountry(index) {
             this.country_data = this.countries.find((_, i) => i == index);
             console.log(this.country_data.name.official);
         }
     },
-    computed: {},
     watch: {
-        openModal() {
-            console.log(this.openModal);
-        },
         countries() {
             this.setPages();
         },

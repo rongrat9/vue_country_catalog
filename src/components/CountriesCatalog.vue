@@ -16,8 +16,8 @@
                 <label for="" class="">Sorting</label>
             </div>
             <div class="col-12 text-start">
-                <button type="button" class="btn btn-outline-primary btn-sm" @click="sortCountry('asc')">ASC</button> &nbsp;
-                <button type="button" class="btn btn-outline-primary btn-sm" @click="sortCountry('desc')">DESC</button>
+                <button type="button" class="btn btn-outline-primary btn-sm" @click="order = 'asc'">ASC</button> &nbsp;
+                <button type="button" class="btn btn-outline-primary btn-sm" @click="order = 'desc'">DESC</button>
             </div>
 
         </div>
@@ -39,7 +39,7 @@
                     <tr v-for="(country, index) in countries" :key="index">
                         <td><img :src="country.flags[1]" width="140" height="90" /></td>
                         <td id="show-modal" data-bs-toggle="modal" data-bs-target="#exampleModal"
-                            @click="modalCountry(index)"><a href="#" class="text-decoration-none">{{ country.name.official }}</a></td>
+                            @click="modalCountry(index)"><a href="#" class="text-decoration-none" :title="message">{{ country.name.official }}</a></td>
                         <td>{{ country.cca2 }}</td>
                         <td>{{ country.cca3 }}</td>
                         <td>{{ country.altSpellings.join(', ') }}</td>
@@ -51,10 +51,9 @@
             <div class="row">
                 <nav aria-label="Page navigation example">
                     <ul class="pagination">
-                        <li class="page-item"><a class="page-link" href="#" v-if="page != 1" @click="page--">Previous</a>
+                        <li class="page-item"><a class="page-link" href="#" v-if="page != 1" @click.prevent="page--">Previous</a>
                         </li>
-                        <li class="page-item" v-for="pageNumber in pages.slice(page - 1, page + 5)" :key="pageNumber"
-                            @click="page = pageNumber"><a class="page-link" href="#">{{ pageNumber }}</a></li>
+                        <li class="page-item"  v-for="pageNumber in pages.slice(page-1, page+5)" :key="pageNumber" @click.prevent="page = pageNumber"><a class="page-link" href="#">{{ pageNumber }}</a></li>
                         <li class="page-item"><a class="page-link" href="#" @click="page++"
                                 v-if="page < pages.length">Next</a></li>
                     </ul>
@@ -75,6 +74,7 @@ export default {
     },
     data() {
         return {
+            message: 'Click me to open modal',
             countries: [],
             page: 1,
             perPage: 25,
@@ -82,56 +82,72 @@ export default {
             search: "",
             oldData: [],
             openModal: false,
-            country_data: []
+            country_data: [],
+            order : 'asc'
         };
     },
-    created() {
-        this.fetchCountries();
+    mounted() {
+        this.displayedcountries();
     },
     methods: {
         fetchCountries() {
             axios.get("https://restcountries.com/v3/all")
                 .then(response => {
                     this.oldData = response.data;
-                    this.countries = response.data;
+                    // this.countries = response.data;
                     // console.log(this.countries) //250
                 }).then(() => {
-                    this.displayedcountries();
+                    this.oldData = this.oldData.filter(country => country.name.official.toLowerCase().includes(this.search.toLowerCase()));
+                    // this.countries = this.paginate(this.oldData);
+                    if (this.order == "asc") {
+                        this.countries = this.paginate(this.oldData.sort((a, b) => {
+                            if (a.name.official < b.name.official) {
+                                return -1;
+                            }
+                        }));
+                    }else{
+                        this.countries = this.paginate(this.oldData.sort((a, b) => {
+                            if (a.name.official > b.name.official) {
+                                return -1;
+                            }
+                        }));
+                    }
                 })
                 .catch(error => {
                     console.error(error);
                 });
         },
         setPages() {
-            let numberOfPages = Math.ceil(this.countries.length / this.perPage);
-            for (let index = 1; index <= numberOfPages; index++) {
-                this.pages.push(index);
-            }
+            this.pages = [];
+            let numberOfPages = Math.ceil(this.oldData.length / this.perPage);
+			for (let index = 1; index <= numberOfPages; index++) {
+				this.pages.push(index);
+			}
+            // console.log(this.pages)
+            // console.log(this.page)
         },
         paginate(countries) {
-            let page = this.page;
-            let perPage = this.perPage;
-            let from = (page * perPage) - perPage;
-            let to = (page * perPage);
+            let from = (this.page * this.perPage) - this.perPage;
+            let to = (this.page * this.perPage);
             return countries.slice(from, to);
         },
-        sortCountry(order) {
-            if (order == "asc") {
-                this.countries = this.countries.sort((a, b) => {
-                    if (a.name.official < b.name.official) {
-                        return -1;
-                    }
-                });
-                return;
-            }
-            this.countries = this.countries.sort((a, b) => {
-                if (a.name.official > b.name.official) {
-                    return -1;
-                }
-            });
-        },
+        // sortCountry(order) {
+        //     if (order == "asc") {
+        //         this.countries = this.paginate(this.oldData.sort((a, b) => {
+        //             if (a.name.official < b.name.official) {
+        //                 return -1;
+        //             }
+        //         }));
+        //         return;
+        //     }
+        //     this.countries = this.paginate(this.oldData.sort((a, b) => {
+        //         if (a.name.official > b.name.official) {
+        //             return -1;
+        //         }
+        //     }));
+        // },
         displayedcountries() {
-            this.countries = this.paginate(this.oldData.filter(country => country.name.official.toLowerCase().includes(this.search.toLowerCase())));
+            this.fetchCountries();
         },
         modalCountry(index) {
             this.country_data = this.countries.find((_, i) => i == index);
@@ -143,8 +159,19 @@ export default {
             this.setPages();
         },
         search() {
+            if(this.page == 1){
+                this.displayedcountries();
+            }else{
+                this.page = 1;
+            }
+        },
+        page() {
             this.displayedcountries();
+        },
+        order(){
+            this.fetchCountries()
         }
+        
     },
 };
 
